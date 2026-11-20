@@ -21,7 +21,7 @@ def _client() -> DeepgramX402Client:
 def transcribe_audio_url(audio_url: str, diarize: bool = False) -> str:
     """Transcribe speech in a publicly fetchable (or presigned) audio URL with Deepgram nova-3.
 
-    Costs $0.004333 per audio minute, billed to the AWS account through AWS Marketplace.
+    Priced per audio minute at Deepgram's pay-as-you-go rate (deepgram.com/pricing), billed to the AWS account through AWS Marketplace.
     """
     params = {"model": "nova-3", "smart_format": "true"}
     if diarize:
@@ -36,7 +36,7 @@ def transcribe_audio_url(audio_url: str, diarize: bool = False) -> str:
 def synthesize_speech(text: str, voice: str = "flux-haley-en") -> str:
     """Turn text into speech with Deepgram Flux TTS (voice `flux-{name}-{lang}`) or Aura-2 (`aura-2-{name}-{lang}`).
 
-    Flux TTS costs $0.045 and Aura-2 $0.03 per 1,000 characters. Returns the path of the MP3 written.
+    Priced per 1,000 characters at Deepgram's pay-as-you-go rates (deepgram.com/pricing). Returns the path of the MP3 written.
     """
     path = "/v1/speak" if voice.startswith("aura-") else "/v2/speak"
     paid = _client().post(path, {"model": voice}, json_body={"text": text})

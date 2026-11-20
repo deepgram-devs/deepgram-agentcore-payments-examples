@@ -12,15 +12,15 @@ Call Deepgram speech-to-text and text-to-speech from an AI agent and pay per req
 | [`typescript/`](typescript/) | The same flow with AWS SDK for JavaScript v3 |
 | [`python/setup_account.py`](python/setup_account.py) | One-time account setup: service-linked role, Payment Manager, AWS Billing connector |
 
-## Endpoints and prices
+## Endpoints
 
-All endpoints are `POST`, batch (no streaming), and priced per request. Query parameters are the regular [Deepgram API](https://developers.deepgram.com/reference/deepgram-api-overview) ones.
+All endpoints are `POST`, batch (no streaming), and priced per request at [Deepgram's pay-as-you-go rates](https://deepgram.com/pricing); each `402` quote states the exact USD price of that request. Query parameters are the regular [Deepgram API](https://developers.deepgram.com/reference/deepgram-api-overview) ones.
 
-| Endpoint | Product | Price |
+| Endpoint | Product | Billed by |
 |---|---|---|
-| `/v1/listen` | Speech-to-text, `nova-3` | $0.004333 per audio minute ($0.005167 with `language=multi`). Add-ons per minute: `keyterm` $0.001333, `redact` $0.002, `detect_entities` $0.001667 |
-| `/v2/speak` | Flux TTS, `model=flux-{voice}-{language}` (required), e.g. `flux-haley-en` | $0.045 per 1,000 characters |
-| `/v1/speak` | Aura-2 TTS, e.g. `model=aura-2-thalia-en` | $0.03 per 1,000 characters |
+| `/v1/listen` | Speech-to-text, `nova-3` | Audio minute (Nova-3 pre-recorded rate, multilingual with `language=multi`), plus add-ons `keyterm`, `redact`, `detect_entities` |
+| `/v2/speak` | Flux TTS, `model=flux-{voice}-{language}` (required), e.g. `flux-haley-en` | 1,000 input characters (Flux TTS rate) |
+| `/v1/speak` | Aura-2 TTS, e.g. `model=aura-2-thalia-en` | 1,000 input characters (Aura-2 rate) |
 
 - **`/v1/listen` body:** `{"url": "https://..."}` with `Content-Type: application/json` (any length; the URL must be fetchable, e.g. an S3 presigned URL), or raw audio up to ~4.5 MB with `Content-Type: audio/wav` (or `audio/mpeg`, `audio/flac`, `audio/ogg`).
 - **`/v1/speak`, `/v2/speak` body:** `{"text": "..."}`. Returns audio (MP3 by default; set `encoding`, `sample_rate`, `container`, and for Flux `bit_rate`, `speed`).
