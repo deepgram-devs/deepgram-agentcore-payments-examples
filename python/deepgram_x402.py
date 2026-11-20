@@ -65,7 +65,8 @@ class DeepgramX402Client:
     ) -> None:
         self.payment_manager_arn = payment_manager_arn or os.environ["PAYMENT_MANAGER_ARN"]
         self.payment_session_id = payment_session_id or os.environ["PAYMENT_SESSION_ID"]
-        self.user_id = user_id or os.environ.get("PAYMENT_USER_ID")
+        # Required with IAM authorization; must match the user the session was created for.
+        self.user_id = user_id or os.environ.get("PAYMENT_USER_ID", "deepgram-example-user")
         region = region or self.payment_manager_arn.split(":")[3]
         self.payments = boto3.client("bedrock-agentcore", region_name=region)
         self.use_dpop = use_dpop if use_dpop is not None else os.environ.get("USE_DPOP", "1") != "0"
@@ -108,10 +109,9 @@ class DeepgramX402Client:
             paymentInstrumentId=AWS_BILLING_INSTRUMENT_ID,
             paymentType="AWS_BILLING_X402",
             paymentInput={"awsBillingX402": payment_input},
+            userId=self.user_id,
             clientToken=str(uuid.uuid4()),  # reuse the same token if you retry ProcessPayment for this quote
         )
-        if self.user_id:
-            call["userId"] = self.user_id
         payment = self.payments.process_payment(**call)
         token = payment["paymentOutput"]["awsBillingX402"]["paymentToken"]  # a credential: don't log it
 

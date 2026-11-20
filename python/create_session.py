@@ -15,13 +15,11 @@ max_usd = sys.argv[1] if len(sys.argv) > 1 else "1.00"
 minutes = int(sys.argv[2]) if len(sys.argv) > 2 else 60  # 15-480
 arn = os.environ["PAYMENT_MANAGER_ARN"]
 client = boto3.client("bedrock-agentcore", region_name=arn.split(":")[3])
-args = dict(
+session = client.create_payment_session(
     paymentManagerArn=arn,
+    userId=os.environ.get("PAYMENT_USER_ID", "deepgram-example-user"),  # required; ProcessPayment must use the same one
     expiryTimeInMinutes=minutes,
     limits={"maxSpendAmount": {"value": max_usd, "currency": "USD"}},
-)
-if user := os.environ.get("PAYMENT_USER_ID"):
-    args["userId"] = user
-session = client.create_payment_session(**args)["paymentSession"]
+)["paymentSession"]
 print(f"export PAYMENT_SESSION_ID={session['paymentSessionId']}")
 print(f"# spend limit ${max_usd}, expires in {minutes} min", file=sys.stderr)

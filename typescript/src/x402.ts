@@ -38,14 +38,15 @@ const b64json = <T>(v: string): T => JSON.parse(Buffer.from(v, "base64").toStrin
 export class DeepgramX402Client {
   private readonly managerArn: string;
   private readonly sessionId: string;
-  private readonly userId?: string;
+  private readonly userId: string;
   private readonly useDpop: boolean;
   private readonly payments: BedrockAgentCoreClient;
 
   constructor(opts: ClientOptions = {}) {
     this.managerArn = opts.paymentManagerArn ?? requiredEnv("PAYMENT_MANAGER_ARN");
     this.sessionId = opts.paymentSessionId ?? requiredEnv("PAYMENT_SESSION_ID");
-    this.userId = opts.userId ?? process.env.PAYMENT_USER_ID;
+    // Required with IAM authorization; must match the user the session was created for.
+    this.userId = opts.userId ?? process.env.PAYMENT_USER_ID ?? "deepgram-example-user";
     this.useDpop = opts.useDpop ?? process.env.USE_DPOP !== "0";
     this.payments = new BedrockAgentCoreClient({ region: this.managerArn.split(":")[3] });
   }

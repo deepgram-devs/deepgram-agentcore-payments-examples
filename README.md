@@ -10,7 +10,7 @@ Call Deepgram speech-to-text and text-to-speech from an AI agent and pay per req
 | [`python/strands_agent.py`](python/strands_agent.py) | A [Strands](https://strandsagents.com) agent with paid Deepgram tools |
 | [`python/langgraph_agent.py`](python/langgraph_agent.py) | A LangGraph (`langchain` `create_agent`) agent with the same tools |
 | [`typescript/`](typescript/) | The same flow with AWS SDK for JavaScript v3 |
-| [`setup/setup.sh`](setup/setup.sh) | One-time account setup: service-linked role, Payment Manager, AWS Billing connector |
+| [`python/setup_account.py`](python/setup_account.py) | One-time account setup: service-linked role, Payment Manager, AWS Billing connector |
 
 ## Endpoints and prices
 
@@ -47,16 +47,17 @@ The AgentCore payments plugins for Strands and LangGraph (`bedrock-agentcore[str
 
 ## Setup
 
-**Prerequisites:** an AWS account, AWS CLI v2.41.2 or later, and Python 3.10+ with [uv](https://docs.astral.sh/uv/) or Node.js 20+. AgentCore payments processes AWS Billing payments in `us-east-1`.
+**Prerequisites:** an AWS account, AWS credentials, and Python 3.10+ with [uv](https://docs.astral.sh/uv/) (setup and Python examples) or Node.js 20+ (TypeScript examples). Setup uses boto3 1.44.7+, so it doesn't depend on your AWS CLI version. AgentCore payments processes AWS Billing payments in `us-east-1`.
 
-1. **Account setup (once, as an administrator):**
+1. **Account setup (once, as an administrator; safe to re-run):**
 
    ```bash
-   ./setup/setup.sh DeepgramPayments us-east-1
+   cd python
+   uv run setup_account.py DeepgramPayments us-east-1
    export PAYMENT_MANAGER_ARN=arn:aws:bedrock-agentcore:us-east-1:...   # printed by the script
    ```
 
-   This creates the AWS Marketplace service-linked role `AWSServiceRoleForMarketplaceAgenticCommerce`, a Payment Manager, and an AWS Billing connector. AWS Marketplace creates and accepts the purchase agreement for the listing automatically on your first payment. The administrator needs the permissions in [Administrator permissions](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/payments-iam-roles.html#payments-iam-admin), including `iam:CreateServiceLinkedRole` and `iam:GetRole` for the service-linked role.
+   This creates the AWS Marketplace service-linked role `AWSServiceRoleForMarketplaceAgenticCommerce`, the Payment Manager service role `AgentCorePaymentsResourceRetrievalRole` with its base permissions, a Payment Manager, and an AWS Billing connector. AWS Marketplace creates and accepts the purchase agreement for the listing automatically on your first payment. The administrator needs the permissions in [Administrator permissions](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/payments-iam-roles.html#payments-iam-admin), including `iam:CreateServiceLinkedRole` and `iam:GetRole` for the service-linked role.
 
 2. **Create a payment session with a spend limit.** Run this as the identity that manages budgets, not as the agent:
 
@@ -90,7 +91,7 @@ AWS recommends keeping budget management and payment execution in separate roles
 |---|---|---|
 | `PAYMENT_MANAGER_ARN` | all | Payment Manager with an AWS Billing connector |
 | `PAYMENT_SESSION_ID` | all except `create_session.py` | Session whose spend limit caps what the examples can spend |
-| `PAYMENT_USER_ID` | optional | End-user ID recorded on the session and payments |
+| `PAYMENT_USER_ID` | optional | End-user ID the session belongs to (default `deepgram-example-user`). Required by the API; `ProcessPayment` must use the session's user |
 | `USE_DPOP` | optional | `0` to send the payment token without DPoP |
 | `BEDROCK_MODEL_ID` | agent examples | Bedrock model for Strands/LangGraph |
 
@@ -98,6 +99,8 @@ AWS recommends keeping budget management and payment execution in separate roles
 
 | Symptom | Cause |
 |---|---|
+| `CreatePaymentManager` "Access denied while creating workload identity" | The service role lacks the base permissions. `setup_account.py` adds them. |
+| `userId is required` | Set `PAYMENT_USER_ID` (or use the default) consistently for `create_session.py` and the examples. |
 | `ProcessPayment` `ValidationException` about the quote | The quote expired (5 minutes) or was modified. Request again and pass the new `accepts` entry unchanged. |
 | `ProcessPayment` budget error | The session spend limit is used up or the session expired. Create a new session. |
 | `payment refused: dpop_required` / `dpop_invalid` | The token is DPoP-bound but the proof is missing, or it doesn't match the method/URL/token. |
