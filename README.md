@@ -28,13 +28,17 @@ All endpoints are `POST`, batch (no streaming), and priced per request at [Deepg
 
 ## How paying works
 
-```text
-agent ── POST /v1/listen ────────────────────────────► x402.deepgram.com
-      ◄── 402 + PAYMENT-REQUIRED (base64 JSON: accepts[] with network "aws:base" and a signed quote) ─┘
-agent ── ProcessPayment(AWS_BILLING_X402, accepts entry unchanged) ──► AgentCore payments
-      ◄── paymentToken (JWT, valid 5 min) ────────────────────────────┘
-agent ── same POST + PAYMENT-SIGNATURE (+ DPoP) ───────► x402.deepgram.com
-      ◄── 200 result + PAYMENT-RESPONSE (AWS Marketplace payment ID) ─┘
+```mermaid
+sequenceDiagram
+    participant A as Agent
+    participant D as x402.deepgram.com
+    participant P as AgentCore payments
+    A->>D: POST /v1/listen
+    D-->>A: 402 + PAYMENT-REQUIRED<br/>(accepts[] with network "aws:base" and a signed quote)
+    A->>P: ProcessPayment(AWS_BILLING_X402, accepts entry unchanged)
+    P-->>A: paymentToken (JWT, valid 5 min)
+    A->>D: same POST + PAYMENT-SIGNATURE (+ DPoP)
+    D-->>A: 200 result + PAYMENT-RESPONSE<br/>(AWS Marketplace payment ID)
 ```
 
 `PAYMENT-SIGNATURE` is base64 JSON `{"x402Version": 2, "resource": <from the 402>, "accepted": <the aws:base entry>, "payload": {"paymentToken": <token>}}`. The charge appears on your AWS bill under AWS Marketplace.
